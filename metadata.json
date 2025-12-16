@@ -1,0 +1,5 @@
+{
+  "name": "Martial Arts Certificate Generator",
+  "description": "A React application to generate, preview, and download custom Martial Arts completion certificates (A4 Landscape) with Gemini-powered course name suggestions.",
+  "requestFramePermissions": []
+}
