@@ -12,7 +12,7 @@ const BASE_WIDTH = 1122;
 const BASE_HEIGHT = 794;
 
 const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewProps>(({ data, template, scale = 1 }, ref) => {
-  const { studentName, startYear, startMonth, courseName, coachName, issueDate } = data;
+  const { studentName, startYear, startMonth, courseName, coachName, issueDate, customBgImage } = data;
 
   // Format date
   const dateObj = new Date(issueDate);
@@ -20,16 +20,37 @@ const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewProps>((
   const month = dateObj.getMonth() + 1;
   const day = dateObj.getDate();
 
+  // Helper to render custom background
+  const CustomBackground = () => (
+    customBgImage ? (
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <img 
+          src={customBgImage} 
+          alt="Custom Background" 
+          className="w-full h-full object-cover"
+        />
+        {/* Optional overlay to ensure text readability if needed, currently disabled to show full image */}
+        {/* <div className="absolute inset-0 bg-white/30"></div> */}
+      </div>
+    ) : null
+  );
+
   // Render content based on template
   const renderContent = () => {
     switch (template) {
       case 'modern':
         return (
-          <div className="relative w-full h-full bg-white text-slate-900 font-serif-sc flex flex-col px-16 pt-16 pb-24 overflow-hidden">
-             {/* Modern Background Accents */}
-             <div className="absolute top-0 left-0 w-32 h-32 bg-blue-900 clip-path-polygon"></div>
-             <div className="absolute bottom-0 right-0 w-64 h-8 bg-blue-900/10"></div>
-             <div className="absolute bottom-8 right-0 w-48 h-8 bg-blue-900/20"></div>
+          <div className={`relative w-full h-full text-slate-900 font-serif-sc flex flex-col px-16 pt-16 pb-24 overflow-hidden ${!customBgImage ? 'bg-white' : ''}`}>
+             <CustomBackground />
+             
+             {/* Modern Background Accents - only show if no custom bg */}
+             {!customBgImage && (
+               <>
+                 <div className="absolute top-0 left-0 w-32 h-32 bg-blue-900 clip-path-polygon"></div>
+                 <div className="absolute bottom-0 right-0 w-64 h-8 bg-blue-900/10"></div>
+                 <div className="absolute bottom-8 right-0 w-48 h-8 bg-blue-900/20"></div>
+               </>
+             )}
              
              {/* Border */}
              <div className="absolute inset-8 border-2 border-slate-200 z-10 pointer-events-none"></div>
@@ -74,19 +95,25 @@ const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewProps>((
 
       case 'traditional':
         return (
-          <div className="relative w-full h-full bg-[#fdfbf7] text-[#4a0e0e] font-serif-sc flex flex-col p-12 overflow-hidden">
-            {/* Traditional Pattern BG */}
-            <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(#8b0000 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+          <div className={`relative w-full h-full text-[#4a0e0e] font-serif-sc flex flex-col p-12 overflow-hidden ${!customBgImage ? 'bg-[#fdfbf7]' : ''}`}>
+            <CustomBackground />
+
+            {/* Traditional Pattern BG - only show if no custom bg */}
+            {!customBgImage && (
+               <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(#8b0000 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+            )}
             
             {/* Traditional Borders */}
-            <div className="absolute inset-4 border-4 border-[#8b0000]"></div>
-            <div className="absolute inset-6 border border-[#8b0000]"></div>
+            <div className="absolute inset-4 border-4 border-[#8b0000] z-10 pointer-events-none"></div>
+            <div className="absolute inset-6 border border-[#8b0000] z-10 pointer-events-none"></div>
             
             {/* Corner Ornaments */}
-            <div className="absolute top-4 left-4 w-16 h-16 border-t-4 border-l-4 border-[#8b0000]"></div>
-            <div className="absolute top-4 right-4 w-16 h-16 border-t-4 border-r-4 border-[#8b0000]"></div>
-            <div className="absolute bottom-4 left-4 w-16 h-16 border-b-4 border-l-4 border-[#8b0000]"></div>
-            <div className="absolute bottom-4 right-4 w-16 h-16 border-b-4 border-r-4 border-[#8b0000]"></div>
+            <div className="z-10 pointer-events-none">
+                <div className="absolute top-4 left-4 w-16 h-16 border-t-4 border-l-4 border-[#8b0000]"></div>
+                <div className="absolute top-4 right-4 w-16 h-16 border-t-4 border-r-4 border-[#8b0000]"></div>
+                <div className="absolute bottom-4 left-4 w-16 h-16 border-b-4 border-l-4 border-[#8b0000]"></div>
+                <div className="absolute bottom-4 right-4 w-16 h-16 border-b-4 border-r-4 border-[#8b0000]"></div>
+            </div>
 
             <div className="relative z-20 h-full flex flex-col items-center justify-between pt-12 pb-20">
                <div className="text-center space-y-4">
@@ -131,11 +158,15 @@ const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewProps>((
       case 'classic':
       default:
         return (
-          <div className="relative w-full h-full bg-[#FFFAF0] text-gray-900 font-serif-sc flex flex-col justify-between overflow-hidden">
-            {/* Watermark */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 opacity-[0.03]">
-               <span className="text-[500px] font-black tracking-widest text-red-900">武</span>
-            </div>
+          <div className={`relative w-full h-full text-gray-900 font-serif-sc flex flex-col justify-between overflow-hidden ${!customBgImage ? 'bg-[#FFFAF0]' : ''}`}>
+            <CustomBackground />
+
+            {/* Watermark - only show if no custom bg or keep transparently? keeping it as it adds character */}
+            {!customBgImage && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 opacity-[0.03]">
+                   <span className="text-[500px] font-black tracking-widest text-red-900">武</span>
+                </div>
+            )}
 
             {/* Borders */}
             <div className="absolute inset-4 border-[12px] border-[#8B4513] z-10 pointer-events-none"></div>

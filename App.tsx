@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { Download, Printer, Layout, ZoomIn, ZoomOut, Maximize, Move } from 'lucide-react';
+import { Download, Printer, Layout, ZoomIn, ZoomOut, Maximize, Move, Image as ImageIcon, Trash2 } from 'lucide-react';
 import CertificatePreview from './components/CertificatePreview';
 import { CertificateData, TemplateType } from './types';
 
@@ -22,7 +22,8 @@ const App: React.FC = () => {
     startMonth: '9',
     courseName: '少林长拳基础',
     coachName: '李四',
-    issueDate: '2025-12-23'
+    issueDate: '2025-12-23',
+    customBgImage: null
   });
 
   // Center and fit canvas on mount
@@ -33,6 +34,21 @@ const App: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setData(prev => ({ ...prev, customBgImage: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const clearCustomBg = () => {
+    setData(prev => ({ ...prev, customBgImage: null }));
   };
 
   // --- Zoom & Pan Logic ---
@@ -114,33 +130,55 @@ const App: React.FC = () => {
   const handleDownloadPdf = async () => {
     if (!certificateRef.current) return;
     setIsGeneratingPdf(true);
-    try {
-      const canvas = await html2canvas(certificateRef.current, {
-        scale: 2, // Higher scale for better resolution
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      });
 
-      const imgData = canvas.toDataURL('image/png');
-      
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4'
-      });
+    // Store previous transform state to restore later
+    const prevTransform = { ...transform };
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
+    // 1. Zoom to 100% and Center logic
+    // We set scale to 1. To ensure clean capture, we reset translation to 0 temporarily
+    // or keep translation but ensure the element is within viewport if html2canvas needs it (it generally grabs the element).
+    // Resetting to x:0, y:0, scale:1 is safest to avoid clipping if the container has overflow hidden.
+    setTransform({ x: 0, y: 0, scale: 1 });
 
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${data.studentName}_结业证书.pdf`);
-    } catch (error) {
-      console.error('Failed to generate PDF', error);
-      alert('PDF生成失败，请重试');
-    } finally {
-      setIsGeneratingPdf(false);
-    }
+    // 2. Wait for the render to update the DOM
+    setTimeout(async () => {
+      try {
+        const canvas = await html2canvas(certificateRef.current!, {
+          scale: 2, // Higher scale for better resolution (this applies on top of the DOM element size)
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          // Explicitly set dimensions to the certificate size to avoid capturing extra whitespace or clipping
+          width: 1122,
+          height: 794,
+          windowWidth: 1122,
+          windowHeight: 794,
+          x: 0,
+          y: 0
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        
+        const pdf = new jsPDF({
+          orientation: 'landscape',
+          unit: 'mm',
+          format: 'a4'
+        });
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`${data.studentName}_结业证书.pdf`);
+      } catch (error) {
+        console.error('Failed to generate PDF', error);
+        alert('PDF生成失败，请重试');
+      } finally {
+        // 3. Restore previous zoom/pan state
+        setTransform(prevTransform);
+        setIsGeneratingPdf(false);
+      }
+    }, 100); // 100ms delay to ensure browser repaints
   };
 
   return (
@@ -187,6 +225,38 @@ const App: React.FC = () => {
                 >
                     现代简约
                 </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+            <h2 className="text-lg font-bold text-stone-800 mb-4 border-b pb-2 flex items-center gap-2">
+              <span className="w-1 h-6 bg-red-700 block rounded-full"></span>
+              外观设置
+            </h2>
+            
+            <div className="space-y-4">
+               <div>
+                  <label className="block text-sm font-medium text-stone-600 mb-2">自定义背景图片</label>
+                  <div className="flex items-center gap-2">
+                     <label className="flex-grow cursor-pointer flex items-center justify-center gap-2 border border-dashed border-stone-300 rounded-lg p-3 hover:bg-stone-50 transition-colors">
+                        <ImageIcon className="w-5 h-5 text-stone-400" />
+                        <span className="text-sm text-stone-600">上传背景 (推荐 1122x794)</span>
+                        <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                     </label>
+                     {data.customBgImage && (
+                        <button 
+                          onClick={clearCustomBg}
+                          className="p-3 text-red-600 border border-stone-200 rounded-lg hover:bg-red-50"
+                          title="清除背景"
+                        >
+                           <Trash2 className="w-5 h-5" />
+                        </button>
+                     )}
+                  </div>
+                  {data.customBgImage && (
+                      <p className="text-xs text-stone-500 mt-1">已应用自定义背景</p>
+                  )}
+               </div>
             </div>
           </div>
 

@@ -7,6 +7,7 @@ export interface CertificateData {
   courseName: string;
   coachName: string;
   issueDate: string; // YYYY-MM-DD
+  customBgImage?: string | null;
 }
 
 export interface SuggestionResponse {
